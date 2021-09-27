@@ -1,0 +1,178 @@
+---
+title: "CASE2_HIST_BNP.Rmd"
+author: "eov016, ssj025, hkv021"
+date: "27 9 2021"
+output: pdf_document
+---
+
+```{r, tabell, include=FALSE, echo = FALSE}
+
+getwd()
+setwd("/home/eov016@ad.uit.no/CASE2_BNP_HISTORISK/CASE2_BNP_HISTORISK")
+
+
+
+
+#knitr::opts_chunk$set(echo = TRUE)
+#knitr::opts_chunk$set(comment=NA)
+
+
+
+library(tidyverse)
+library(rvest)
+library(PxWebApiData)
+library(dplyr)
+
+
+
+webpage <- read_html("https://www.ssb.no/a/histstat/aarbok/ht-0901-bnp.html")
+tabell <- html_table(html_nodes(webpage, "table")[[2]])
+
+
+
+head(tabell)
+tail(tabell)
+str(tabell)
+names(tabell)
+
+
+
+tabell <- tabell %>% drop_na()
+
+
+
+names(tabell) <- c("År", "BNP", "BNP_endring",
+                   "BNP_percap", "BNP_percap_endring")
+
+tabell <- as_tibble(tabell)
+
+tabell
+
+
+
+tabell <-
+  tabell %>% 
+  mutate(BNP=str_replace_all(BNP, " ", ""),
+         BNP_endring=na_if(BNP_endring, ""),
+         BNP_percap_endring=na_if(BNP_percap_endring, ""),
+         BNP_endring=str_replace(BNP_endring, ",","."),
+         BNP_percap_endring=str_replace(BNP_percap_endring, ",",".")) %>% 
+  mutate_if(is.character, as.numeric)
+
+tabell
+
+
+
+```
+
+Oppgave 1
+
+```{r}
+tabell %>%
+  ggplot(aes(x=År, y=BNP_percap)) +
+  geom_line(color="green 3") +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title="BNP \n (kr per innbygger)",
+       x ="År 1865 til 2011",
+       y = "Kr per innbygger") +
+  theme_bw()
+```
+
+
+
+
+-
+
+-
+
+-
+
+
+
+
+Oppgave 2
+
+```{r}
+
+tabell %>% 
+  mutate(Innbyggere=BNP/BNP_percap) %>% 
+  ggplot(aes(x=År, y=Innbyggere)) +
+  geom_line(color="green 4") +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title="Innbyggere i Norge ",
+       x ="År 1865 til 2011",
+       y = "innbyggere") +
+  theme_bw()
+```
+
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+Oppgave 3
+
+Prossenen var som følger;
+
+
+
+
+```{r, results=FALSE}
+Ny_tabell <- ApiData("https://data.ssb.no/api/v0/no/table/09842/",
+Tid = paste(1970:2019),
+ContentsCode = "BNP")
+
+head(Ny_tabell[[1]])
+```
+
+
+```{r, results=FALSE}
+
+head(Ny_tabell[[2]])
+```
+```{r, results=FALSE}
+bnp <- Ny_tabell[[1]]
+
+
+bnp <- bnp %>%
+  filter(år >=2012) %>%
+  rename(År=år, BNP=value)
+head(bnp)
+
+
+bnp <- bnp %>% 
+  select(År, BNP) %>% 
+  mutate_if(is.character, as.numeric)
+head(bnp)
+```
+
+```{r}
+Ny_tabell_År <-
+  bind_rows(tabell, bnp)
+
+Ny_tabell_År %>% 
+  slice(141:150)
+```
+
+
+  
+
+
+
+
